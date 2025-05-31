@@ -12,7 +12,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout code from SCM (e.g., Git)
-                checkout scm
+                git branch: 'main', url: 'https://github.com/ajaykumarbk/zapbook.git'
             }
         }
         stage('Build Docker Image') {
