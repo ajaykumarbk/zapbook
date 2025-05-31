@@ -5,7 +5,6 @@ pipeline {
         DOCKER_REGISTRY = 'docker.io' // e.g., 'docker.io', 'my-private-registry.com', or AWS ECR URI
         DOCKER_IMAGE = "${DOCKER_REGISTRY}/my-org/my-app"
         DOCKER_TAG = "${env.BUILD_ID}-${env.GIT_COMMIT?.substring(0,7)}" // Tag with build ID and short Git commit
-        DOCKER_CREDENTIALS_ID = 'DKey' // Jenkins credentials ID for Docker registry
         DOCKERFILE_PATH = './Dockerfile' // Path to Dockerfile
     }
     stages {
@@ -46,8 +45,8 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry("https://${DOCKER_REGISTRY}", DOCKER_CREDENTIALS_ID) {
-                        try {
+                    withCredentials([usernamePassword(credentialsId: 'hub', passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USER')]) {
+                      try {
                             // Push Docker image to registry
                             def dockerImage = docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}")
                             dockerImage.push()
@@ -56,6 +55,7 @@ pipeline {
                             echo "Docker image pushed: ${DOCKER_IMAGE}:${DOCKER_TAG}"
                         } catch (Exception e) {
                             error "Failed to push Docker image: ${e.message}"
+                        }
                         }
                     }
                 }
