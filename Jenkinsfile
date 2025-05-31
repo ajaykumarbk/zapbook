@@ -3,7 +3,7 @@ pipeline {
     environment {
         // Define environment variables
         DOCKER_REGISTRY = 'docker.io' // e.g., 'docker.io', 'my-private-registry.com', or AWS ECR URI
-        DOCKER_IMAGE = "${DOCKER_REGISTRY}/my-org/my-app"
+        DOCKER_IMAGE = "${DOCKER_REGISTRY}ajaykumara/zapbook"
         DOCKER_TAG = "${env.BUILD_ID}-${env.GIT_COMMIT?.substring(0,7)}" // Tag with build ID and short Git commit
         DOCKERFILE_PATH = './Dockerfile' // Path to Dockerfile
     }
