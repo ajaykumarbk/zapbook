@@ -46,7 +46,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'hub', passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USER')]) {
-                      try {
+                        try {
                             // Push Docker image to registry
                             def dockerImage = docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}")
                             dockerImage.push()
@@ -55,7 +55,6 @@ pipeline {
                             echo "Docker image pushed: ${DOCKER_IMAGE}:${DOCKER_TAG}"
                         } catch (Exception e) {
                             error "Failed to push Docker image: ${e.message}"
-                        }
                         }
                     }
                 }
