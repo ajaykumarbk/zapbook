@@ -10,7 +10,8 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 git branch: 'main', 
-                url: 'https://github.com/ajaykumarbk/zapbook.git',
+                url: 'https://github.com/ajaykumarbk/zapbook.git'
+                // Removed trailing comma that was causing the syntax error
             }
         }
 
