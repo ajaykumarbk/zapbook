@@ -1,90 +1,43 @@
 pipeline {
     agent any
+
     environment {
-        // Define environment variables
-        DOCKER_REGISTRY = 'docker.io' // e.g., 'docker.io', 'my-private-registry.com', or AWS ECR URI
-        DOCKER_IMAGE = "${DOCKER_REGISTRY}ajaykumara/zapbook"
-        DOCKER_TAG = "${env.BUILD_ID}-${env.GIT_COMMIT?.substring(0,7)}" // Tag with build ID and short Git commit
-        DOCKERFILE_PATH = './Dockerfile' // Path to Dockerfile
+        DOCKER_HUB = credentials('hub') // Store in Jenkins credentials
+        IMAGE_NAME = "ajaykumara/zapbook"
     }
+
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                // Checkout code from SCM (e.g., Git)
-                git branch: 'main', url: 'https://github.com/ajaykumarbk/zapbook.git'
+                git branch: 'main', 
+                url: 'https://github.com/ajaykumarbk/zapbook.git',
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    try {
-                        // Build Docker image
-                        def dockerImage = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}", "--file ${DOCKERFILE_PATH} .")
-                        echo "Docker image built: ${DOCKER_IMAGE}:${DOCKER_TAG}"
-                    } catch (Exception e) {
-                        error "Failed to build Docker image: ${e.message}"
-                    }
+                    docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
                 }
             }
         }
-        stage('Test Docker Image') {
+
+        stage('Push to Docker Hub') {
             steps {
                 script {
-                    try {
-                        // Run tests inside the Docker container (example: simple health check)
-                        sh """
-                            docker run --rm ${DOCKER_IMAGE}:${DOCKER_TAG} /bin/sh -c 'echo "Running tests..." && exit 0'
-                        """
-                        echo "Docker image tests passed"
-                    } catch (Exception e) {
-                        error "Docker image tests failed: ${e.message}"
-                    }
-                }
-            }
-        }
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'hub', passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USER')]) {
-                        try {
-                            // Push Docker image to registry
-                            def dockerImage = docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}")
-                            dockerImage.push()
-                            // Optionally push a 'latest' tag
-                            dockerImage.push('latest')
-                            echo "Docker image pushed: ${DOCKER_IMAGE}:${DOCKER_TAG}"
-                        } catch (Exception e) {
-                            error "Failed to push Docker image: ${e.message}"
-                        }
-                    }
-                }
-            }
-        }
-        stage('Cleanup') {
-            steps {
-                script {
-                    try {
-                        // Remove local Docker images to save space
-                        sh "docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true"
-                        sh "docker rmi ${DOCKER_IMAGE}:latest || true"
-                        echo "Cleaned up local Docker images"
-                    } catch (Exception e) {
-                        echo "Warning: Cleanup failed: ${e.message}"
+                    docker.withRegistry('https://registry.hub.docker.com', 'hub') {
+                        docker.image("${IMAGE_NAME}:${env.BUILD_NUMBER}").push()
+                        // Optional: Push as 'latest'
+                        docker.image("${IMAGE_NAME}:${env.BUILD_NUMBER}").push('latest')
                     }
                 }
             }
         }
     }
+
     post {
-        success {
-            echo "Pipeline completed successfully!"
-        }
-        failure {
-            echo "Pipeline failed. Check logs for details."
-        }
         always {
-            // Archive logs or artifacts if needed
-            archiveArtifacts artifacts: '**/logs/*.log', allowEmptyArchive: true
+            cleanWs() // Clean workspace
         }
     }
 }
